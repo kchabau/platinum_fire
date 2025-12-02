@@ -151,4 +151,5 @@ Desktop.ini
 # But keep the directory structure
 !data_folder/.gitkeep
 
-foundational_details.md
+# Project-specific files to ignore
+foundation_details.md
