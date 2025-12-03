@@ -153,3 +153,6 @@ Desktop.ini
 
 # Project-specific files to ignore
 foundation_details.md
+
+# Confidential data files
+data_folder/non_nbly_companies.csv
