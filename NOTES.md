@@ -3,6 +3,7 @@
 ## Current Work in Progress
 
 ### Phone Number Transformation
+
 **Status:** In Progress  
 **Date:** December 2, 2024
 
@@ -11,7 +12,7 @@ Working on fixing the phone number transformation step. The current implementati
 **Location:** `functions/helper_functions.py` - `fix_numeric_values()` function with `transformation='phone'`
 
 **Notes:**
+
 - Current format extracts all digits and adds + prefix
 - Handles various input formats (parentheses, dashes, spaces)
 - May need additional validation or formatting rules
-

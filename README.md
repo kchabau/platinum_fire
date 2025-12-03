@@ -2,6 +2,18 @@
 
 A Tkinter-based GUI application for managing and transforming data files. Upload files to `data_folder`, inspect data structures, adjust data types, and apply transformation functions to clean and standardize your data.
 
+### Quick Start - How to Use
+
+Watch this quick demo video to see Platinum Fire in action:
+
+https://github.com/kchabau/platinum_fire/blob/main/Screen%20Recording%202025-12-02%20at%207.48.54%20PM.mov
+
+The video demonstrates:
+- Uploading files to the application
+- Inspecting data structure and types
+- Applying transformations to clean and standardize data
+- Saving your cleaned datasets
+
 ### Background
 
 **The Problem:**
