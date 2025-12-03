@@ -332,4 +332,4 @@ This is an open-source project. Feel free to:
 
 ### License
 
-[Add your license information here]
+This project is open source and available for anyone to use, modify, and distribute freely. No formal license restrictions - use it however you'd like!
