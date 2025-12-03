@@ -29,7 +29,7 @@ class UploadApp(tk.Tk):
     def __init__(self) -> None:
         super().__init__()
         self.title("Platinum Fire - Data Management")
-        self.geometry("1200x700")
+        self.geometry("1500x900")
         self.resizable(True, True)
         
         # Application state
@@ -156,12 +156,12 @@ class UploadApp(tk.Tk):
         ttk.Button(btn_frame, text="Inspect selected in data_folder", command=self.inspect_selected_data_file).grid(row=0, column=4, padx=4, pady=4, sticky="ew")
         ttk.Button(btn_frame, text="Delete selected from data_folder", command=self.delete_selected_data_file).grid(row=0, column=5, padx=4, pady=4, sticky="ew")
         
-        # Next Section button - initially hidden
+        # Next Section button - always enabled
         self.next_section_btn = ttk.Button(
             btn_frame, 
             text="Next Section →", 
             command=self.show_data_inspection_page,
-            state="disabled"
+            state="normal"
         )
         self.next_section_btn.grid(row=0, column=6, padx=4, pady=4, sticky="ew")
         
@@ -400,12 +400,9 @@ class UploadApp(tk.Tk):
         ).grid(row=0, column=1, padx=12, sticky="w")
 
     def _on_data_list_selection(self, event=None) -> None:
-        """Enable/disable Next Section button based on selection."""
-        selected = self.data_list.curselection()
-        if selected:
-            self.next_section_btn.config(state="normal")
-        else:
-            self.next_section_btn.config(state="disabled")
+        """Handle data list selection (no longer controls Next Section button)."""
+        # Button is now always enabled, this method kept for potential future use
+        pass
 
     def show_file_management_page(self) -> None:
         """Show the file management page."""
@@ -417,20 +414,18 @@ class UploadApp(tk.Tk):
 
     def show_data_inspection_page(self) -> None:
         """Show the data inspection page."""
-        selected = self.data_list.curselection()
-        if not selected:
-            messagebox.showwarning("No selection", "Select at least one file in data_folder to proceed.")
-            return
-        
         if self.file_management_page:
             self.file_management_page.grid_remove()
         if self.data_inspection_page:
             self.data_inspection_page.grid(row=0, column=0, sticky="nsew")
         self.nav_label.config(text="Data Inspection & Type Adjustment")
         
-        # Refresh file selector and load first selected file
+        # Refresh file selector
         self._refresh_file_selector()
-        if self.file_selector['values']:
+        
+        # If a file was selected on the previous page, auto-load it
+        selected = self.data_list.curselection()
+        if selected and self.file_selector['values']:
             first_selected = self.data_list.get(selected[0])
             if first_selected in self.file_selector['values']:
                 self.file_selector.set(first_selected)

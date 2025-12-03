@@ -39,13 +39,6 @@ def fix_column_names(data: pd.DataFrame) -> pd.DataFrame:
         return data  # Return original on error
 
 
-# Future functions can be added here:
-# - fix_column_names(df)
-# - fix_name_values(df)
-# - convert_data_types(df, column_type_mapping)
-# - handle_missing_values(df, strategy='drop'|'fill')
-# - remove_duplicates(df, subset=None)
-# - etc.
 
 def fix_name_values(column: pd.Series, transformation: str = 'title') -> pd.Series:
     """
@@ -78,6 +71,7 @@ def fix_name_values(column: pd.Series, transformation: str = 'title') -> pd.Seri
             
             if transformation == 'title':
                 result = result.str.strip().str.title()
+                # Remove extra spaces
             elif transformation == 'upper':
                 result = result.str.strip().str.upper()
             elif transformation == 'lower':
@@ -248,4 +242,197 @@ def fix_state_values(column: pd.Series, transformation: str = 'standardize') -> 
         
     except Exception as e:
         print(f'Error fixing state values: {e}')
+        return column  # Return original on error
+
+def fix_numeric_values(column: pd.Series, transformation: str = 'standardize') -> pd.Series:
+    """
+    Fix_numeric_values: This function transforms numeric values in a column. It can handle both
+    numeric and string columns that contain numeric values (e.g., "$1,000", "50%", "1,234.56").
+    
+    The function first extracts numeric values from strings (removing currency symbols, commas, 
+    percentage signs, etc.), then applies the specified transformation.
+
+    Args:
+        column: A pandas Series (column) to transform (can be numeric or string containing numbers)
+        transformation: Type of transformation to apply:
+            - 'standardize': Convert to numeric float64 format (default) - removes formatting and converts to pure numbers
+            - 'format': Convert to float64 with 2 decimal places (e.g., 100000.456 -> 100000.46)
+            - 'percentage': Convert to percentage format as string/object (e.g., 0.5 -> "50.00%")
+            - 'money': Format as currency with dollar sign as string/object (e.g., 100000 -> "$100,000.00")
+            - 'phone': Format as phone number with plus sign prefix (e.g., "1234567890" -> "+1234567890", extracts digits and adds + prefix)
+            - 'id': Convert to integer as int64 if whole number, or keep as float64 if has decimals for manual inspection (e.g., 123456.0 -> 123456, 1234.56 -> 1234.56)
+    
+    Returns:
+        A Series with transformed numeric values. Returns float64 for 'standardize' and 'format'. 
+        Returns int64 (Int64 nullable) for 'id' if all values are whole numbers, or float64 if any have decimals. 
+        Returns object (string) for 'percentage', 'money', and 'phone' transformations.
+    
+    Example:
+        >>> df['price'] = fix_numeric_values(df['price'], 'standardize')  # Convert "$1,000" -> 1000.0
+        >>> df['price'] = fix_numeric_values(df['price'], 'money')  # Format as "$1,000.00"
+    """
+    print(f"\n[FIX_NUMERIC_VALUES] Applying transformation: '{transformation}'")
+    print(f"  Column dtype: {column.dtype}")
+    print(f"  Total values: {len(column)}, Non-null: {column.notna().sum()}, Null: {column.isna().sum()}")
+    
+    try: 
+        # Create a copy to avoid modifying the original
+        result = column.copy()
+        
+        # Helper function to extract numeric value from string
+        def extract_numeric(value):
+            """Extract numeric value from string, handling currency, percentages, commas, etc."""
+            if pd.isna(value):
+                return np.nan
+            
+            # If already numeric, return as is
+            if pd.api.types.is_number(value):
+                return float(value)
+            
+            # Convert to string and clean
+            value_str = str(value).strip()
+            if not value_str or value_str.lower() in ['nan', 'none', 'null', '']:
+                return np.nan
+            
+            # Remove currency symbols ($, €, £, etc.)
+            value_str = re.sub(r'[$€£¥₹]', '', value_str)
+            
+            # Handle percentages - if ends with %, divide by 100
+            is_percentage = value_str.endswith('%')
+            if is_percentage:
+                value_str = value_str.rstrip('%').strip()
+            
+            # Remove commas and other formatting characters
+            value_str = re.sub(r'[,\s]', '', value_str)
+            
+            # Try to convert to float
+            try:
+                numeric_value = float(value_str)
+                # If it was a percentage, convert from percentage to decimal
+                if is_percentage:
+                    numeric_value = numeric_value / 100.0
+                return numeric_value
+            except (ValueError, TypeError):
+                # If conversion fails, try to extract first number found
+                numbers = re.findall(r'-?\d+\.?\d*', value_str)
+                if numbers:
+                    try:
+                        return float(numbers[0])
+                    except (ValueError, TypeError):
+                        pass
+                return np.nan
+        
+        # Step 1: Convert all values to numeric (handling strings)
+        if column.dtype in ['int64', 'float64', 'Int64', 'Float64']:
+            # Already numeric, convert to float
+            print(f"  → Column is already numeric, converting to float...")
+            result = result.astype(float)
+            print(f"  ✓ Converted {result.notna().sum()} values to numeric")
+        elif column.dtype in ['object', 'string']:
+            # Extract numeric values from strings
+            print(f"  → Extracting numeric values from strings (removing currency symbols, commas, percentages, etc.)...")
+            result = result.apply(extract_numeric)
+            result = pd.to_numeric(result, errors='coerce')
+            extracted_count = result.notna().sum()
+            print(f"  ✓ Successfully extracted {extracted_count} out of {len(column)} numeric values")
+        else:
+            print(f'  ⚠ WARNING: Column dtype "{column.dtype}" may not contain numeric values. Attempting conversion...')
+            result = pd.to_numeric(result, errors='coerce')
+            converted_count = result.notna().sum()
+            print(f"  ✓ Converted {converted_count} out of {len(column)} values to numeric")
+        
+        # Step 2: Apply transformation
+        transformation = transformation.lower()
+        
+        if transformation == 'standardize':
+            # Return as float64 numeric values (no formatting)
+            print(f"  ✓ Standardized to float64 (pure numeric values)")
+            final_result = result.astype('float64')
+        elif transformation == 'format':
+            # Return as float64 numeric values (round to 2 decimals)
+            print(f"  ✓ Formatted to float64 with 2 decimal places")
+            final_result = result.round(2).astype('float64')
+        elif transformation == 'percentage':
+            # Convert to percentage format as string (object type)
+            print(f"  ✓ Formatting as percentage strings (e.g., '50.00%')")
+            final_result = result.apply(lambda x: f'{x:.2%}' if pd.notna(x) else '')
+            final_result = final_result.astype('object')
+        elif transformation == 'money':
+            # Format as currency with dollar sign as string (object type)
+            print(f"  ✓ Formatting as currency strings (e.g., '$1,000.00')")
+            final_result = result.apply(lambda x: f'${x:,.2f}' if pd.notna(x) else '')
+            final_result = final_result.astype('object')
+        elif transformation == 'phone':
+            # Format as phone number string with plus sign prefix (object type)
+            print(f"  → Formatting as phone numbers...")
+            def format_phone(value):
+                """Format phone number to international format: +1234567890"""
+                if pd.isna(value) or np.isnan(value):
+                    return ''
+                
+                # Convert to string and extract only digits
+                value_str = str(value).strip()
+                if not value_str:
+                    return ''
+                
+                # Extract all digits
+                digits = re.sub(r'\D', '', value_str)
+                
+                if not digits:
+                    return ''
+                
+                # Format with plus sign prefix
+                # If already starts with +, remove it first
+                if value_str.startswith('+'):
+                    # Already has plus, just extract digits and add plus back
+                    return f"+{digits}"
+                else:
+                    # Add plus sign prefix
+                    return f"+{digits}"
+            
+            final_result = result.apply(format_phone)
+            final_result = final_result.astype('object')
+            print(f"  ✓ Formatted phone numbers (e.g., '+1234567890')")
+        elif transformation == 'id':
+            # Convert to integer as int64, but preserve values with decimals for manual inspection
+            print(f"  → Converting to ID format (preserving decimals for inspection)...")
+            def convert_to_id(value):
+                if pd.isna(value) or np.isnan(value):
+                    return np.nan
+                # Check if value has decimal places (not a whole number)
+                # Use a small epsilon to handle floating point precision issues
+                if abs(value - int(value)) > 1e-10:
+                    # Has decimals, keep as float64 for manual inspection
+                    return float(value)
+                else:
+                    # Whole number, convert to integer
+                    return int(value)
+            
+            final_result = result.apply(convert_to_id)
+            # Check if any values have decimals (not whole numbers)
+            has_decimals = final_result.apply(lambda x: pd.notna(x) and abs(x - int(x)) > 1e-10 if pd.notna(x) else False).any()
+            if has_decimals:
+                # Some values have decimals, return as float64 to preserve them
+                print(f"  ✓ Some values have decimals - returning as float64 for manual inspection")
+                final_result = final_result.astype('float64')
+            else:
+                # All whole numbers, return as nullable int64
+                print(f"  ✓ All values are whole numbers - returning as int64")
+                final_result = final_result.astype('Int64')
+        else:
+            print(f'  ⚠ WARNING: Unknown transformation "{transformation}". Supported: standardize, format, percentage, money, phone, id')
+            print(f"  → Returning original column unchanged\n")
+            return column
+        
+        # Show sample of transformed values
+        sample = final_result.dropna().head(5).tolist()
+        if sample:
+            print(f"  Sample transformed values: {sample}")
+        print(f"  Final dtype: {final_result.dtype}")
+        print(f"  ✓ Transformation complete\n")
+        return final_result
+    
+    except Exception as e:
+        print(f'  ✗ ERROR: Failed to fix numeric values: {e}')
+        print(f"  → Returning original column\n")
         return column  # Return original on error

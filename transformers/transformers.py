@@ -4,7 +4,7 @@ Transformation function definitions with descriptions.
 This module defines all available transformation functions that can be applied
 to data columns through the GUI.
 """
-from functions.helper_functions import fix_name_values, fix_date_values, fix_state_values
+from functions.helper_functions import fix_name_values, fix_date_values, fix_state_values, fix_numeric_values
 
 TRANSFORMATION_FUNCTIONS = {
     "fix_name_values": {
@@ -42,6 +42,20 @@ TRANSFORMATION_FUNCTIONS = {
             "standardize": "Standardize - Convert to full state names with proper case (e.g., 'NY' -> 'New York', 'new york' -> 'New York')",
             "state_name": "State Name - Convert to full state name format (e.g., 'NY' -> 'New York', 'california' -> 'California')",
             "state_code": "State Code - Convert to two-letter state code (e.g., 'New York' -> 'NY', 'California' -> 'CA')"
+        }
+    },
+    "fix_numeric_values": {
+        "name": "Fix Numeric Values",
+        "description": "Transforms numeric values in a column. Can parse string values containing numbers (e.g., '$1,000', '50%', '1,234.56') and convert them to numeric format, or format numeric values as strings. Supports standardizing to pure numeric values, formatting with commas/decimals, converting to percentages, formatting as currency, formatting as phone numbers, or formatting as IDs.",
+        "function": fix_numeric_values,
+        "requires_param": True,
+        "param_options": {
+            "standardize": "Standardize - Extract numeric values from strings and convert to float64 (e.g., '$1,000' -> 1000.0, '50%' -> 0.5, '1,234.56' -> 1234.56). Returns numeric float64.",
+            "format": "Format - Round numbers to 2 decimal places as float64 (e.g., 100000.456 -> 100000.46, 100000.4 -> 100000.40). Returns numeric float64.",
+            "percentage": "Percentage - Convert to percentage format as string/object (e.g., 0.5 -> '50.00%', 0.55 -> '55.00%'). Returns object type.",
+            "money": "Money - Format as currency with dollar sign as string/object (e.g., 100000 -> '$100,000.00', 100000.4 -> '$100,000.40'). Returns object type.",
+            "phone": "Phone - Format as phone number with plus sign prefix as string/object. Extracts digits and adds + prefix (e.g., '1234567890' -> '+1234567890', '(555) 123-4567' -> '+5551234567'). Returns object type.",
+            "id": "ID - Convert to integer as int64 (e.g., 123456.78 -> 123456, 1234.56 -> 1234). Returns numeric int64 (nullable Int64 type)."
         }
     }
 }
